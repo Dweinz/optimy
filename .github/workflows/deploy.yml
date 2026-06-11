@@ -27,8 +27,6 @@ jobs:
             package-lock.json
             pirate-logistics/package-lock.json
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Build Seven Seas Idle
         run: |
