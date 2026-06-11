@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;⚓&lt;/text&gt;&lt;/svg&gt;" />
+    <title>Seven Seas Idle</title>
+  </head>
+  <body>
+    <div id="app">
+      <header id="topbar">
+        <h1>⚓ Seven Seas Idle</h1>
+        <div id="topbar-stats"></div>
+        <div id="topbar-buttons">
+          <button id="btn-save" class="btn small" data-tip="Save the game now">💾 Save</button>
+          <button id="btn-export" class="btn small" data-tip="Copy save data to clipboard">📤 Export</button>
+          <button id="btn-import" class="btn small" data-tip="Import a save string">📥 Import</button>
+        </div>
+      </header>
+      <div id="layout">
+        <nav id="tabs"></nav>
+        <main id="content"></main>
+        <aside id="side">
+          <div id="scene-container"></div>
+          <div id="activity-box"></div>
+          <div id="goal-box"></div>
+          <div id="event-log-box">
+            <h3>📜 Captain's Log</h3>
+            <div id="event-log"></div>
+          </div>
+        </aside>
+      </div>
+      <div id="notifications"></div>
+      <div id="modal-root"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

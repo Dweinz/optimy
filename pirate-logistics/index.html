@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;🏴‍☠️&lt;/text&gt;&lt;/svg&gt;" />
+    <title>Pirate Logistics</title>
+  </head>
+  <body>
+    <div id="app">
+      <header id="topbar">
+        <h1>🏴‍☠️ Pirate Logistics</h1>
+        <div id="topbar-stats"></div>
+        <div id="topbar-right">
+          <div id="speed-controls">
+            <button class="btn small" data-action="speed:0" data-tip="Pause">⏸</button>
+            <button class="btn small" data-action="speed:1" data-tip="Normal speed">1×</button>
+            <button class="btn small" data-action="speed:2" data-tip="Double speed">2×</button>
+            <button class="btn small" data-action="speed:4" data-tip="Quadruple speed">4×</button>
+          </div>
+          <button id="btn-save" class="btn small">💾</button>
+          <button id="btn-export" class="btn small">📤</button>
+          <button id="btn-import" class="btn small">📥</button>
+          <button id="btn-newgame" class="btn small danger" data-tip="Abandon this archipelago and generate a new one">🔄</button>
+        </div>
+      </header>
+      <div id="layout">
+        <nav id="panel-tabs"></nav>
+        <aside id="panel"></aside>
+        <main id="viewport">
+          <div id="scene-container"></div>
+          <div id="alerts"></div>
+          <div id="hover-tip"></div>
+        </main>
+      </div>
+      <div id="notifications"></div>
+      <div id="modal-root"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
