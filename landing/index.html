@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;🏴‍☠️&lt;/text&gt;&lt;/svg&gt;" />
+  <title>Pirate Games</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 28px;
+      background: linear-gradient(180deg, #0e1a28, #10141c);
+      color: #c8d2e0; font-family: Georgia, serif; padding: 24px;
+    }
+    h1 { color: #f0cf5d; font-size: 34px; text-shadow: 0 2px 8px #000; }
+    .games { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+    a.game {
+      display: block; width: 320px; padding: 26px 24px; text-decoration: none;
+      background: #1a2230; border: 2px solid #d4af37; border-radius: 14px;
+      color: #c8d2e0; transition: transform .15s, box-shadow .15s;
+    }
+    a.game:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(212,175,55,.25); }
+    .game .icon { font-size: 44px; }
+    .game h2 { color: #ffc55c; margin: 10px 0 8px; font-size: 21px; }
+    .game p { font-size: 14px; line-height: 1.5; color: #8a96a9; }
+    .game .play { display: inline-block; margin-top: 14px; color: #f0cf5d; font-weight: bold; }
+    footer { color: #5a667a; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>⚓ Pirate Games</h1>
+  <div class="games">
+    <a class="game" href="./seven-seas/">
+      <div class="icon">⛵</div>
+      <h2>Seven Seas Idle</h2>
+      <p>A deep idle pirate adventure: skills, fleets, treasure maps, relics, bounty bosses and prestige. Your empire grows even while you're away.</p>
+      <span class="play">Play →</span>
+    </a>
+    <a class="game" href="./pirate-logistics/">
+      <div class="icon">🏴‍☠️</div>
+      <h2>Pirate Logistics</h2>
+      <p>A Factorio-inspired real-time logistics sim: production chains, shipping routes, exploration and bottleneck hunting across a procedural archipelago.</p>
+      <span class="play">Play →</span>
+    </a>
+  </div>
+  <footer>Built with Vite + TypeScript + Three.js · Saves live in your browser</footer>
+</body>
+</html>
