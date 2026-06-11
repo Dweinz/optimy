@@ -12,6 +12,7 @@ import { tickCrewUpkeep, tickAutoTrade, tickPrices } from './economy';
 import { tickEvents } from './events';
 import { initUI, bindState, renderAll, selectIsland, getSelectedIsland } from './ui';
 import { initScene, updateScene } from './threeScene';
+import { initTutorial } from './tutorial';
 import { addAlert } from './notify';
 
 let state: GameState = loadGame();
@@ -29,6 +30,7 @@ initUI(state, (next) => {
 initScene(document.getElementById('scene-container')!, (islandId) => {
   if (islandId !== null) selectIsland(islandId);
 });
+initTutorial();
 
 /** One simulation step. Order matters: upkeep → production → logistics. */
 function simTick(dt: number): void {

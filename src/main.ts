@@ -7,6 +7,7 @@ import { loadGame, applyOfflineProgress, startAutosave, saveGame } from './save'
 import { tick } from './game';
 import { initUI, bindState, renderAll, showOfflineSummary } from './ui';
 import { initScene, updateScene } from './threeScene';
+import { initTutorial } from './tutorial';
 import { logEvent } from './notifications';
 
 let state: GameState = loadGame();
@@ -26,6 +27,7 @@ initUI(state, (next) => {
 });
 
 initScene(document.getElementById('scene-container')!);
+initTutorial();
 
 if (offline && (offline.gold > 0 || offline.voyages > 0 || offline.seconds > 300)) {
   showOfflineSummary(offline);

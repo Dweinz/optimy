@@ -230,6 +230,23 @@ table.data-table tr:hover td { background: rgba(212,175,55,.05); }
 .mt8 { margin-top: 8px; }
 .mb8 { margin-bottom: 8px; }
 
+#tut-highlight {
+  position: fixed; z-index: 900; display: none; pointer-events: none;
+  border: 3px solid var(--gold-bright); border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.5), 0 0 20px var(--gold);
+  transition: all .3s ease;
+}
+#tut-card {
+  position: fixed; z-index: 901; width: 320px;
+  background: var(--wood); border: 2px solid var(--gold); border-radius: 10px;
+  padding: 14px 16px; box-shadow: 0 8px 30px rgba(0,0,0,.7);
+  transition: left .3s ease, top .3s ease;
+}
+#tut-card .tut-step { color: var(--gold); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+#tut-card .tut-text { color: var(--parchment); font-size: 13px; line-height: 1.55; }
+#tut-card .tut-hint { color: var(--green); font-size: 12px; margin-top: 8px; }
+#tut-card .tut-buttons { display: flex; justify-content: space-between; margin-top: 12px; }
+
 ::-webkit-scrollbar { width: 9px; }
 ::-webkit-scrollbar-track { background: var(--wood-dark); }
 ::-webkit-scrollbar-thumb { background: var(--wood-lighter); border-radius: 5px; }

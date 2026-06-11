@@ -199,6 +199,23 @@ select, input[type="number"] {
   box-shadow: 0 4px 14px rgba(0,0,0,.6);
 }
 
+#tut-highlight {
+  position: fixed; z-index: 900; display: none; pointer-events: none;
+  border: 3px solid var(--accent-bright); border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.5), 0 0 20px var(--accent);
+  transition: all .3s ease;
+}
+#tut-card {
+  position: fixed; z-index: 901; width: 320px;
+  background: var(--panel); border: 2px solid var(--accent); border-radius: 10px;
+  padding: 14px 16px; box-shadow: 0 8px 30px rgba(0,0,0,.7);
+  transition: left .3s ease, top .3s ease;
+}
+#tut-card .tut-step { color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+#tut-card .tut-text { color: var(--text-bright); font-size: 13px; line-height: 1.55; }
+#tut-card .tut-hint { color: var(--green); font-size: 12px; margin-top: 8px; }
+#tut-card .tut-buttons { display: flex; justify-content: space-between; margin-top: 12px; }
+
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--panel-lighter); border-radius: 4px; }
