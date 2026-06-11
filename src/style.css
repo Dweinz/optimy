@@ -102,7 +102,8 @@ h3 { color: var(--gold); font-size: 15px; margin: 12px 0 6px; }
   padding: 7px 14px; cursor: pointer; border-radius: 6px;
   font-family: inherit; font-size: 13px; transition: all .12s;
 }
-.btn:hover:not(:disabled) { background: linear-gradient(180deg, #5a4630, var(--wood-lighter)); transform: translateY(-1px); }
+.btn:hover:not(:disabled) { background: linear-gradient(180deg, #5a4630, var(--wood-lighter)); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(212,175,55,.2); }
+.btn:active:not(:disabled) { transform: translateY(0) scale(.96); }
 .btn:disabled { opacity: .4; cursor: not-allowed; border-color: var(--ink-dim); color: var(--ink-dim); }
 .btn.small { padding: 4px 9px; font-size: 12px; }
 .btn.primary { background: linear-gradient(180deg, #8a6d23, #6a5318); color: #fff; }

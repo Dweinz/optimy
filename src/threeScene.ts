@@ -41,6 +41,17 @@ function mat(color: number, opts: Partial<THREE.MeshStandardMaterialParameters> 
   return new THREE.MeshStandardMaterial({ color, flatShading: true, ...opts });
 }
 
+/** Enables soft shadows on every mesh in a subtree. */
+function shadows<T extends THREE.Object3D>(obj: T): T {
+  obj.traverse(o => {
+    if (o instanceof THREE.Mesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+  });
+  return obj;
+}
+
 function makeShipMesh(tier: number): THREE.Group {
   const g = new THREE.Group();
   const size = 0.6 + tier * 0.35;
@@ -70,7 +81,7 @@ function makeShipMesh(tier: number): THREE.Group {
   const flag = new THREE.Mesh(new THREE.PlaneGeometry(size * 0.35, size * 0.2), mat(0x111111, { side: THREE.DoubleSide }));
   flag.position.set(0, size * 1.95, 0);
   g.add(flag);
-  return g;
+  return shadows(g);
 }
 
 function makeHouse(seed: number): THREE.Group {
@@ -84,7 +95,7 @@ function makeHouse(seed: number): THREE.Group {
   roof.position.y = 0.65;
   roof.rotation.y = Math.PI / 4;
   g.add(roof);
-  return g;
+  return shadows(g);
 }
 
 function makePalm(): THREE.Group {
@@ -112,6 +123,10 @@ export function initScene(container: HTMLElement): void {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
 
   controls = new OrbitControls(camera, renderer.domElement);
@@ -127,8 +142,17 @@ export function initScene(container: HTMLElement): void {
   // Lights
   ambient = new THREE.AmbientLight(0x88aacc, 0.5);
   scene.add(ambient);
+  scene.add(new THREE.HemisphereLight(0x9ec3e8, 0x2a4a66, 0.45));
   sun = new THREE.DirectionalLight(0xffeedd, 1.2);
   sun.position.set(10, 12, 6);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -22;
+  sun.shadow.camera.right = 22;
+  sun.shadow.camera.top = 22;
+  sun.shadow.camera.bottom = -22;
+  sun.shadow.camera.far = 60;
+  sun.shadow.bias = -0.002;
   scene.add(sun);
 
   // Ocean
@@ -137,21 +161,22 @@ export function initScene(container: HTMLElement): void {
   baseWave.set(oceanGeo.attributes.position.array as Float32Array);
   ocean = new THREE.Mesh(oceanGeo, mat(0x1c5d8c, { transparent: true, opacity: 0.92, metalness: 0.25, roughness: 0.6 }));
   ocean.rotation.x = -Math.PI / 2;
+  ocean.receiveShadow = true;
   scene.add(ocean);
 
   // Island
   const island = new THREE.Mesh(new THREE.ConeGeometry(4.2, 2.2, 9), mat(0xd9c08a));
   island.position.y = -0.4;
-  scene.add(island);
+  scene.add(shadows(island));
   const hill = new THREE.Mesh(new THREE.ConeGeometry(2.4, 2.2, 8), mat(0x4a8a3a));
   hill.position.set(-0.8, 0.9, -0.6);
-  scene.add(hill);
+  scene.add(shadows(hill));
 
   const palmPositions: [number, number][] = [[2.2, 1.4], [-2.6, 1.2], [1.4, -2.4], [-1.2, 2.6]];
   for (const [x, z] of palmPositions) {
     const p = makePalm();
     p.position.set(x, 0.45, z);
-    scene.add(p);
+    scene.add(shadows(p));
   }
 
   // Dock
@@ -164,7 +189,7 @@ export function initScene(container: HTMLElement): void {
     post.position.set(3.4 + i * 0.85, 0, 0.8 + (i % 2) * 0.8);
     dock.add(post);
   }
-  scene.add(dock);
+  scene.add(shadows(dock));
 
   // Lighthouse
   const lh = new THREE.Group();
@@ -181,7 +206,7 @@ export function initScene(container: HTMLElement): void {
   cap.position.y = 2.55;
   lh.add(cap);
   lh.position.set(2.6, 0.3, -2.2);
-  scene.add(lh);
+  scene.add(shadows(lh));
   lighthouseLamp = new THREE.PointLight(0xffdd88, 0, 14);
   lighthouseLamp.position.set(2.6, 2.6, -2.2);
   scene.add(lighthouseLamp);
@@ -200,7 +225,7 @@ export function initScene(container: HTMLElement): void {
   chest.add(glow);
   chest.position.set(3.3, 0.32, 2.6);
   chest.rotation.y = -0.6;
-  scene.add(chest);
+  scene.add(shadows(chest));
 
   treasureGroup = new THREE.Group();
   treasureGroup.position.set(3.3, 0.3, 2.6);

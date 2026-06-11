@@ -21,8 +21,11 @@ let ocean: THREE.Mesh;
 let oceanGeo: THREE.PlaneGeometry;
 let oceanBase: Float32Array;
 let selectionRing: THREE.Mesh;
+let hoverRing: THREE.Mesh;
 let routeLinesGroup: THREE.Group;
 let elapsed = 0;
+let hoveredIslandId: number | null = null;
+let focusTo: THREE.Vector3 | null = null;
 
 interface IslandVisual {
   group: THREE.Group;
@@ -40,6 +43,23 @@ let onSelectIsland: (id: number | null) => void = () => {};
 
 function mat(color: number, opts: Partial<THREE.MeshStandardMaterialParameters> = {}): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, ...opts });
+}
+
+/** Enables soft shadows on every mesh in a subtree. */
+function shadows<T extends THREE.Object3D>(obj: T): T {
+  obj.traverse(o => {
+    if (o instanceof THREE.Mesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+  });
+  return obj;
+}
+
+/** Shortest-path angle interpolation for smooth ship turning. */
+function lerpAngle(a: number, b: number, t: number): number {
+  const d = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  return a + d * t;
 }
 
 // ------------------------------------------------------------ island meshes
@@ -123,7 +143,7 @@ function buildIslandGroup(island: Island): THREE.Group {
   }
 
   g.position.set(island.x, 0, island.z);
-  return g;
+  return shadows(g);
 }
 
 function islandBuiltKey(island: Island): string {
@@ -147,7 +167,7 @@ function makeShipMesh(typeId: string): THREE.Group {
   const sail = new THREE.Mesh(new THREE.PlaneGeometry(size * 0.8, size * 0.9), mat(0xe8e0d0, { side: THREE.DoubleSide }));
   sail.position.y = size * 1.05;
   g.add(sail);
-  return g;
+  return shadows(g);
 }
 
 // ------------------------------------------------------------------- init
@@ -166,6 +186,10 @@ export function initScene(el: HTMLElement, selectCb: (id: number | null) => void
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(el.clientWidth, el.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   el.appendChild(renderer.domElement);
 
   controls = new OrbitControls(camera, renderer.domElement);
@@ -177,15 +201,25 @@ export function initScene(el: HTMLElement, selectCb: (id: number | null) => void
   controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
 
-  scene.add(new THREE.AmbientLight(0x8aa5c8, 0.6));
-  const sun = new THREE.DirectionalLight(0xfff2dd, 1.2);
+  scene.add(new THREE.AmbientLight(0x8aa5c8, 0.55));
+  scene.add(new THREE.HemisphereLight(0x9ec3e8, 0x16334d, 0.5));
+  const sun = new THREE.DirectionalLight(0xfff2dd, 1.3);
   sun.position.set(60, 90, 40);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -190;
+  sun.shadow.camera.right = 190;
+  sun.shadow.camera.top = 190;
+  sun.shadow.camera.bottom = -190;
+  sun.shadow.camera.far = 400;
+  sun.shadow.bias = -0.0015;
   scene.add(sun);
 
   oceanGeo = new THREE.PlaneGeometry(700, 700, 56, 56);
   oceanBase = new Float32Array(oceanGeo.attributes.position.array as Float32Array);
   ocean = new THREE.Mesh(oceanGeo, mat(0x1c5d8c, { transparent: true, opacity: 0.94, metalness: 0.2, roughness: 0.65 }));
   ocean.rotation.x = -Math.PI / 2;
+  ocean.receiveShadow = true;
   scene.add(ocean);
 
   selectionRing = new THREE.Mesh(
@@ -197,6 +231,15 @@ export function initScene(el: HTMLElement, selectCb: (id: number | null) => void
   selectionRing.visible = false;
   scene.add(selectionRing);
 
+  hoverRing = new THREE.Mesh(
+    new THREE.TorusGeometry(9, 0.16, 8, 40),
+    new THREE.MeshBasicMaterial({ color: 0x5aa7e3, transparent: true, opacity: 0.55 }),
+  );
+  hoverRing.rotation.x = -Math.PI / 2;
+  hoverRing.position.y = 0.3;
+  hoverRing.visible = false;
+  scene.add(hoverRing);
+
   routeLinesGroup = new THREE.Group();
   scene.add(routeLinesGroup);
 
@@ -204,7 +247,10 @@ export function initScene(el: HTMLElement, selectCb: (id: number | null) => void
 
   // Click-to-select with drag detection (so panning doesn't select).
   let downPos: { x: number; y: number } | null = null;
-  renderer.domElement.addEventListener('pointerdown', (e) => { downPos = { x: e.clientX, y: e.clientY }; });
+  renderer.domElement.addEventListener('pointerdown', (e) => {
+    downPos = { x: e.clientX, y: e.clientY };
+    focusTo = null; // user takes over the camera
+  });
   renderer.domElement.addEventListener('pointerup', (e) => {
     if (!downPos) return;
     const moved = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
@@ -253,6 +299,7 @@ function updateHover(e: PointerEvent): void {
   const tip = document.getElementById('hover-tip');
   if (!tip || !hoverState) return;
   const id = pickIsland(e);
+  hoveredIslandId = id;
   if (id === null) { tip.style.display = 'none'; return; }
   const island = islandById(hoverState, id);
   if (!island) { tip.style.display = 'none'; return; }
@@ -313,16 +360,10 @@ function syncRouteLines(s: GameState): void {
   }
 }
 
-function syncShips(s: GameState): void {
+function syncShips(s: GameState, dt: number): void {
   const alive = new Set<number>();
   s.ships.forEach((ship, idx) => {
     alive.add(ship.id);
-    let mesh = shipMeshes.get(ship.id);
-    if (!mesh) {
-      mesh = makeShipMesh(ship.type);
-      shipMeshes.set(ship.id, mesh);
-      scene.add(mesh);
-    }
     let pos = shipWorldPos(s, ship);
     if (!pos && (ship.state === 'expedition' || ship.state === 'colonize')) {
       pos = expeditionShipPos(s, ship.id);
@@ -333,14 +374,32 @@ function syncShips(s: GameState): void {
       const slot = idx % 5;
       pos = { x: home.x + 8 + (slot * 2.4), z: home.z + 6 + (idx % 3) * 2.2 };
     }
-    const targetX = pos.x;
-    const targetZ = pos.z;
-    const dx = targetX - mesh.position.x;
-    const dz = targetZ - mesh.position.z;
-    if (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01) {
-      mesh.rotation.y = Math.atan2(-dz, dx);
+    let mesh = shipMeshes.get(ship.id);
+    if (!mesh) {
+      mesh = makeShipMesh(ship.type);
+      mesh.position.set(pos.x, 0, pos.z);
+      shipMeshes.set(ship.id, mesh);
+      scene.add(mesh);
     }
-    mesh.position.set(targetX, Math.sin(elapsed * 1.6 + ship.id) * 0.12, targetZ);
+
+    // Eased motion: ships glide to their sim position and bank into turns
+    // instead of teleporting, with a snap guard for cross-map reassignments.
+    const dx = pos.x - mesh.position.x;
+    const dz = pos.z - mesh.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 60) {
+      mesh.position.set(pos.x, 0, pos.z);
+    } else if (dist > 0.001) {
+      const k = 1 - Math.exp(-5 * dt);
+      mesh.position.x += dx * k;
+      mesh.position.z += dz * k;
+      if (dist > 0.08) {
+        const desired = Math.atan2(-dz, dx);
+        mesh.rotation.y = lerpAngle(mesh.rotation.y, desired, 1 - Math.exp(-7 * dt));
+      }
+    }
+    mesh.position.y = Math.sin(elapsed * 1.6 + ship.id) * 0.12;
+    mesh.rotation.z = Math.sin(elapsed * 1.3 + ship.id) * 0.035;
   });
   for (const [id, mesh] of shipMeshes) {
     if (!alive.has(id)) { scene.remove(mesh); shipMeshes.delete(id); }
@@ -364,7 +423,7 @@ export function updateScene(s: GameState, dt: number, selectedIslandId: number |
 
   syncIslands(s);
   syncRouteLines(s);
-  syncShips(s);
+  syncShips(s, dt);
 
   if (selectedIslandId !== null) {
     const island = islandById(s, selectedIslandId);
@@ -372,7 +431,8 @@ export function updateScene(s: GameState, dt: number, selectedIslandId: number |
       selectionRing.visible = true;
       selectionRing.position.set(island.x, 0.3, island.z);
       const r = 5.5 + island.size * 3.4;
-      selectionRing.scale.setScalar(r / 9);
+      // Gentle breathing pulse so the selection reads at a glance.
+      selectionRing.scale.setScalar((r / 9) * (1 + Math.sin(elapsed * 2.6) * 0.035));
       (selectionRing.material as THREE.MeshBasicMaterial).color.setHex(island.owned ? 0xffc55c : 0x5aa7e3);
     } else {
       selectionRing.visible = false;
@@ -381,15 +441,36 @@ export function updateScene(s: GameState, dt: number, selectedIslandId: number |
     selectionRing.visible = false;
   }
 
+  // Hover feedback ring (skipped when hovering the already-selected island).
+  if (hoveredIslandId !== null && hoveredIslandId !== selectedIslandId) {
+    const island = islandById(s, hoveredIslandId);
+    if (island && island.discovered) {
+      hoverRing.visible = true;
+      hoverRing.position.set(island.x, 0.3, island.z);
+      hoverRing.scale.setScalar((5.5 + island.size * 3.4) / 9);
+    } else {
+      hoverRing.visible = false;
+    }
+  } else {
+    hoverRing.visible = false;
+  }
+
+  // Smooth camera glide toward a focused island (pans camera + target
+  // together so the viewing angle stays constant).
+  if (focusTo) {
+    const before = controls.target.clone();
+    controls.target.lerp(focusTo, 1 - Math.exp(-4 * dt));
+    camera.position.add(controls.target.clone().sub(before));
+    if (controls.target.distanceTo(focusTo) < 0.4) focusTo = null;
+  }
+
   controls.update();
   renderer.render(scene, camera);
 }
 
-/** Pans the camera to an island (used by UI "locate" buttons). */
+/** Glides the camera to an island (used by UI "locate" buttons). */
 export function focusIsland(s: GameState, id: number): void {
   const island = islandById(s, id);
   if (!island) return;
-  const offset = camera.position.clone().sub(controls.target);
-  controls.target.set(island.x, 0, island.z);
-  camera.position.copy(controls.target).add(offset);
+  focusTo = new THREE.Vector3(island.x, 0, island.z);
 }

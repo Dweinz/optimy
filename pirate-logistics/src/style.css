@@ -101,7 +101,9 @@ h3 { color: var(--accent); font-size: 13px; margin: 10px 0 5px; text-transform: 
   color: var(--accent-bright); padding: 5px 11px; cursor: pointer;
   border-radius: 5px; font-family: inherit; font-size: 12px; transition: background .1s;
 }
-.btn:hover:not(:disabled) { background: #3a4a66; }
+.btn { transition: background .12s, transform .08s, box-shadow .12s; }
+.btn:hover:not(:disabled):not(.disabled) { background: #3a4a66; box-shadow: 0 2px 8px rgba(232,163,61,.18); }
+.btn:active:not(:disabled):not(.disabled) { transform: scale(.96); }
 .btn:disabled, .btn.disabled { opacity: .35; cursor: not-allowed; border-color: var(--text-dim); color: var(--text-dim); }
 .btn.disabled:hover { background: var(--panel-lighter); }
 .btn.small { padding: 3px 8px; font-size: 11px; }
@@ -112,7 +114,9 @@ h3 { color: var(--accent); font-size: 13px; margin: 10px 0 5px; text-transform: 
 .card {
   background: var(--panel-light); border: 1px solid var(--panel-lighter);
   border-radius: 7px; padding: 9px 11px; margin-bottom: 8px;
+  transition: border-color .15s;
 }
+.card:hover { border-color: #3f5070; }
 .card.selected, .card.highlight { border-color: var(--accent); }
 
 table.t { width: 100%; border-collapse: collapse; font-size: 12px; }
