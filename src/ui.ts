@@ -2,6 +2,8 @@
 // innerHTML-based with click delegation so the 1s re-render never breaks
 // buttons.
 
+declare const __APP_VERSION__: string;
+
 import type { GameState, ActivityId, BuildingId, MapQuality, OfflineSummary } from './types';
 import {
   SKILLS, ACTIVITIES, SHIP_TYPES, BUILDINGS, TRADE_GOODS, ISLANDS, RELICS,
@@ -147,6 +149,7 @@ function renderTopbar(): void {
     <span class="tstat">⚔️ <b>${fmt(S.resources.navalPower)}</b></span>
     <span class="tstat">⭐ <b>${fmt(S.resources.reputation)}</b></span>
     ${S.legend.points > 0 || S.legend.prestiges > 0 ? `<span class="tstat">🌟 <b>${S.legend.points}</b> LP</span>` : ''}
+    <span class="tstat ver-stat">v${__APP_VERSION__}</span>
   `;
 }
 

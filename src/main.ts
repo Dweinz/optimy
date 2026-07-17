@@ -13,10 +13,6 @@ import { initTutorial } from './tutorial';
 import { initTouch } from './touch';
 import { logEvent } from './notifications';
 
-// Version badge
-const verEl = document.getElementById('app-version');
-if (verEl) verEl.textContent = `v${__APP_VERSION__}`;
-
 // PWA install prompt — captured and surfaced as a button so users don't need
 // to dig through the browser menu to add the app to their home screen.
 interface BeforeInstallPromptEvent extends Event {
