@@ -296,6 +296,80 @@ table.data-table tr:hover td { background: rgba(212,175,55,.05); }
 ::-webkit-scrollbar-thumb:hover { background: #5a4630; }
 
 /* ================================================================
+   ACTIVITY HIGHLIGHTS — show what the current focus produces/consumes
+   ================================================================ */
+.res-row.producing {
+  border-left: 3px solid var(--green);
+  padding-left: 7px;
+  background: rgba(123,196,123,.07);
+  border-radius: 0 4px 4px 0;
+}
+.res-row.consuming {
+  border-left: 3px solid var(--red);
+  padding-left: 7px;
+  background: rgba(224,108,90,.07);
+  border-radius: 0 4px 4px 0;
+}
+.res-badge {
+  display: inline-block; font-size: 10px; font-weight: bold;
+  padding: 0 3px; border-radius: 3px; margin-left: 4px; vertical-align: middle;
+}
+.res-badge.up  { background: rgba(123,196,123,.25); color: var(--green); }
+.res-badge.dn  { background: rgba(224,108,90,.25);  color: var(--red); }
+
+.skill-card.active-skill {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 10px rgba(240,207,93,.3);
+  background: linear-gradient(135deg, rgba(90,70,30,.5), var(--wood-light));
+}
+.skill-card.active-skill .skill-name::after {
+  content: ' ▶ training';
+  font-size: 10px; color: var(--gold); font-style: italic; font-weight: normal;
+}
+
+.act-affects {
+  margin-top: 5px; font-size: 12px; line-height: 1.5;
+}
+
+/* ================================================================
+   TOUCH — persistent tap tooltip (replaces CSS :hover::after on mobile)
+   ================================================================ */
+#mobile-tip {
+  position: fixed; z-index: 600; pointer-events: none;
+  background: #0d0a06; color: var(--parchment);
+  border: 1px solid var(--gold); border-radius: 6px;
+  padding: 7px 11px; font-size: 13px; line-height: 1.4;
+  white-space: pre-line; text-align: left;
+  max-width: 230px; width: max-content;
+  box-shadow: 0 4px 12px rgba(0,0,0,.75);
+  transform: translateY(-100%) translateY(-6px);
+  opacity: 0; transition: opacity .15s;
+}
+#mobile-tip.visible { opacity: 1; }
+
+/* ================================================================
+   TOUCH — strip hover-flash side-effects on touch screens.
+   Hover fires & clears instantly on tap, causing distracting
+   flickers. :active gives clean, immediate feedback instead.
+   ================================================================ */
+@media (hover: none) {
+  /* Buttons: no lift/glow on tap — use scale-down instead */
+  .btn:hover:not(:disabled) { transform: none; box-shadow: none; background: linear-gradient(180deg, var(--wood-lighter), var(--wood-light)); }
+  .btn:active:not(:disabled) { transform: scale(.95); }
+
+  /* Activity cards: no hover lift */
+  .activity-card:hover { transform: none; border-color: var(--wood-lighter); }
+  .activity-card:active { border-color: var(--gold); background: linear-gradient(180deg, #4a3a20, var(--wood-light)); }
+
+  /* Tab buttons: no hover background flash */
+  .tab-btn:hover { background: transparent; color: var(--ink); }
+  .tab-btn:active { background: var(--wood-light); }
+
+  /* Kill the CSS [data-tip]:hover::after tooltip — JS handles it on mobile */
+  [data-tip]:hover::after { display: none; }
+}
+
+/* ================================================================
    MOBILE / PWA  (portrait-first, touch-friendly)
    ================================================================ */
 @media (max-width: 768px) {
@@ -403,7 +477,10 @@ table.data-table tr:hover td { background: rgba(212,175,55,.05); }
   .notif { font-size: 13px; padding: 8px 12px; }
 
   /* ── Tables: horizontal scroll instead of squishing ──────────── */
-  table.data-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Hide non-essential columns so buttons are always reachable.
+     This avoids nested-scroll snap-back entirely. */
+  .m-hide { display: none; }
+  table.data-table { display: table; overflow: visible; width: 100%; }
 
   /* ── Typography ───────────────────────────────────────────────── */
   h2 { font-size: 17px; }

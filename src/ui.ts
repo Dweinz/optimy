@@ -32,6 +32,27 @@ type TabId =
   | 'port' | 'maps' | 'treasure' | 'trade' | 'bounties' | 'relics'
   | 'achievements' | 'legend';
 
+// What each activity produces (↑) and consumes (↓), and which skill it trains.
+// Used to highlight affected resources and skills while an activity is running.
+const ACTIVITY_TOUCHES: Record<string, {
+  up: string[];
+  down?: string[];
+  skill: string;
+}> = {
+  sail:         { up: ['gold', 'supplies'],                           skill: 'sailing' },
+  explore:      { up: ['knowledge'],         down: ['supplies'],      skill: 'navigation' },
+  raid:         { up: ['gold', 'tradeGoods', 'reputation'],           skill: 'plundering' },
+  trade:        { up: ['gold', 'tradeGoods'],                         skill: 'trading' },
+  smuggle:      { up: ['gold', 'reputation'],                         skill: 'smuggling' },
+  treasureHunt: { up: ['treasure'],          down: ['maps'],          skill: 'treasureHunting' },
+  recruit:      { up: ['crew'],              down: ['gold'],          skill: 'crewManagement' },
+  buildShips:   { up: ['ships'],                                      skill: 'shipbuilding' },
+  tavern:       { up: ['rum', 'gold'],                                skill: 'tavernKeeping' },
+  researchMaps: { up: ['maps', 'knowledge'],                          skill: 'cartography' },
+  studyRelics:  { up: ['cursedRelics'],      down: ['knowledge'],     skill: 'cursedLore' },
+  diplomacy:    { up: ['influence', 'reputation'],                    skill: 'diplomacy' },
+};
+
 const TABS: { id: TabId; name: string; icon: string }[] = [
   { id: 'overview', name: 'Overview', icon: '🏠' },
   { id: 'resources', name: 'Resources', icon: '📦' },
@@ -181,11 +202,28 @@ function renderActivityBox(): void {
   } else if (S.activity === 'buildShips' && S.buildOrder) {
     progress = bar(S.buildOrder.points / S.buildOrder.needed, `${shipType(S.buildOrder.typeId).name}`, 'blue');
   }
+
+  // Build "Affects" summary: icons for produced/consumed resources + trained skill.
+  let affects = '';
+  if (def && S.activity) {
+    const t = ACTIVITY_TOUCHES[S.activity];
+    if (t) {
+      const resIcon = (id: string) => RESOURCE_INFO.find(r => r.id === id)?.icon ?? id;
+      const upStr   = t.up.map(resIcon).join(' ');
+      const downStr = (t.down ?? []).map(resIcon).join(' ');
+      const sk = SKILLS.find(s => s.id === t.skill);
+      affects = `<div class="act-affects">
+        <span class="green-text">↑ ${upStr}</span>${downStr ? ` <span class="red-text">↓ ${downStr}</span>` : ''}${sk ? ` · <span class="muted">${sk.icon} ${sk.name} XP</span>` : ''}
+      </div>`;
+    }
+  }
+
   el.innerHTML = `
     <div class="flex-between">
       <b class="gold-text">${def ? `${def.icon} ${def.name}` : '😴 Idle'}</b>
       ${def ? '<button class="btn small" data-action="act:stop">Stop</button>' : ''}
     </div>
+    ${affects}
     <div class="muted mt8">${activityRates(S)}</div>
     <div class="mt8">${progress}</div>
   `;
@@ -307,14 +345,23 @@ function pageOverview(): string {
 }
 
 function pageResources(): string {
+  const touches = S.activity ? ACTIVITY_TOUCHES[S.activity] : null;
+  const upSet   = new Set(touches?.up ?? []);
+  const downSet = new Set(touches?.down ?? []);
   return `
     <h2>Resources</h2>
     <div class="panel">
-      ${RESOURCE_INFO.map(r => `
-        <div class="res-row" data-tip="${esc(r.desc)}">
-          <span class="res-name">${r.icon} ${r.name}</span>
+      ${RESOURCE_INFO.map(r => {
+        const producing = upSet.has(r.id);
+        const consuming = downSet.has(r.id);
+        const cls = producing ? 'producing' : consuming ? 'consuming' : '';
+        const badge = producing ? '<span class="res-badge up">↑</span>' : consuming ? '<span class="res-badge dn">↓</span>' : '';
+        return `
+        <div class="res-row ${cls}" data-tip="${esc(r.desc)}">
+          <span class="res-name">${r.icon} ${r.name}${badge}</span>
           <span class="res-val">${fmt(S.resources[r.id])}</span>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
     </div>
     <div class="panel">
       <h3>Lifetime Statistics</h3>
@@ -333,6 +380,7 @@ function pageResources(): string {
 }
 
 function pageSkills(): string {
+  const activeSkillId = S.activity ? ACTIVITY_TOUCHES[S.activity]?.skill : null;
   return `
     <h2>Skills <span class="muted">(total ${totalSkillLevels(S)} levels)</span></h2>
     <div class="grid cols2">
@@ -341,8 +389,9 @@ function pageSkills(): string {
         const need = xpForLevel(sk.level);
         const mNeed = masteryXpForLevel(sk.mastery);
         const effects = def.effects.map(e => `+${e.perLevel}% ${e.key}/lvl`).join(', ');
+        const isActive = def.id === activeSkillId;
         return `
-          <div class="skill-card" data-tip="${esc(effects)}">
+          <div class="skill-card ${isActive ? 'active-skill' : ''}" data-tip="${esc(effects)}"${isActive ? ' title="Currently training"' : ''}>
             <div class="skill-head">
               <span class="skill-name">${def.icon} ${def.name}</span>
               <span class="skill-lvl">Lv ${sk.level}${sk.level >= 99 ? ' (MAX)' : ''}</span>
@@ -382,7 +431,7 @@ function pageFleet(): string {
     const t = shipType(sh.typeId);
     return `<tr>
       <td>${t.icon} <b>${esc(sh.name)}</b></td><td>${t.name}</td>
-      <td>${t.capacity}</td><td>${t.speed}</td><td>${t.power}</td><td>${t.cargo}</td>
+      <td class="m-hide">${t.capacity}</td><td class="m-hide">${t.speed}</td><td class="m-hide">${t.power}</td><td class="m-hide">${t.cargo}</td>
       <td><button class="btn small danger" data-action="ship:scrap:${sh.id}" data-tip="Scrap for ${fmt(scrapValue(sh.typeId))} gold">Scrap</button></td>
     </tr>`;
   }).join('');
@@ -401,7 +450,7 @@ function pageFleet(): string {
     return `<tr ${locked ? 'style="opacity:.5"' : ''}>
       <td>${t.icon} <b>${t.name}</b></td>
       <td>${fmt(cost.gold)}💰 ${cost.supplies ? `${fmt(cost.supplies)}🍞` : ''} ${cost.treasure ? `${fmt(cost.treasure)}💎` : ''}</td>
-      <td>${t.capacity}</td><td>${t.speed}</td><td>${t.power}</td><td>${t.cargo}</td>
+      <td class="m-hide">${t.capacity}</td><td class="m-hide">${t.speed}</td><td class="m-hide">${t.power}</td><td class="m-hide">${t.cargo}</td>
       <td>${locked ? `<span class="muted">Shipbuilding ${t.skillReq}</span>`
         : `<button class="btn small ${check.ok ? 'primary' : ''}" data-action="ship:order:${t.id}" ${check.ok ? '' : 'disabled'} data-tip="${esc(check.ok ? `Build time: ${fmt(t.buildPoints)} pts` : check.reason)}">Order</button>`}</td>
     </tr>`;
@@ -413,14 +462,14 @@ function pageFleet(): string {
     <div class="panel">
       <h3>Your Ships</h3>
       <table class="data-table">
-        <tr><th>Name</th><th>Class</th><th>Bunks</th><th>Speed</th><th>Power</th><th>Cargo</th><th></th></tr>
+        <tr><th>Name</th><th>Class</th><th class="m-hide">Bunks</th><th class="m-hide">Speed</th><th class="m-hide">Power</th><th class="m-hide">Cargo</th><th></th></tr>
         ${rows}
       </table>
     </div>
     <div class="panel">
       <h3>Shipyard Orders</h3>
       <table class="data-table">
-        <tr><th>Class</th><th>Cost</th><th>Bunks</th><th>Speed</th><th>Power</th><th>Cargo</th><th></th></tr>
+        <tr><th>Class</th><th>Cost</th><th class="m-hide">Bunks</th><th class="m-hide">Speed</th><th class="m-hide">Power</th><th class="m-hide">Cargo</th><th></th></tr>
         ${shop}
       </table>
     </div>
@@ -432,9 +481,9 @@ function pageCrew(): string {
   const cost = recruitCost(S);
   const rows = S.crewMembers.map(m => `
     <tr>
-      <td><b>${esc(m.name)}</b></td><td>${m.role}</td><td>${m.level}</td>
-      <td>${m.combat}</td><td>${m.navigation}</td>
-      <td>${m.morale.toFixed(0)}%</td><td>${m.loyalty.toFixed(0)}%</td>
+      <td><b>${esc(m.name)}</b></td><td>${m.role}</td><td class="m-hide">${m.level}</td>
+      <td class="m-hide">${m.combat}</td><td class="m-hide">${m.navigation}</td>
+      <td>${m.morale.toFixed(0)}%</td><td class="m-hide">${m.loyalty.toFixed(0)}%</td>
       <td>${canPromote(m)
         ? `<button class="btn small" data-action="crew:promote:${m.id}" ${S.resources.gold >= promotionCost(m) ? '' : 'disabled'} data-tip="Promote for ${fmt(promotionCost(m))} gold (+stats, +loyalty)">⬆ ${fmt(promotionCost(m))}💰</button>`
         : '<span class="muted">Max rank</span>'}</td>
@@ -450,7 +499,7 @@ function pageCrew(): string {
     </div>
     <div class="panel">
       <table class="data-table">
-        <tr><th>Name</th><th>Rank</th><th>Lv</th><th>⚔️</th><th>🧭</th><th>Morale</th><th>Loyalty</th><th></th></tr>
+        <tr><th>Name</th><th>Rank</th><th class="m-hide">Lv</th><th class="m-hide">⚔️</th><th class="m-hide">🧭</th><th>Morale</th><th class="m-hide">Loyalty</th><th></th></tr>
         ${rows}
       </table>
     </div>
