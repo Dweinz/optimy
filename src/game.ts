@@ -336,6 +336,99 @@ export function tick(s: GameState, dt: number, opts: TickOptions = {}): void {
   }
 }
 
+// ---------------------------------------------------------- resource rates
+
+export type ResourceRateMap = Partial<Record<string, number>>;
+
+/**
+ * Computes the approximate net rate (per second) for each resource given the
+ * current game state. Episodic gains/losses are averaged over their interval.
+ */
+export function computeRates(s: GameState): ResourceRateMap {
+  const b = computeBonuses(s);
+  const ce = crewEfficiency(s, b);
+  const spd = fleetSpeed(s, b);
+  const rates: Record<string, number> = {};
+  const add = (id: string, v: number): void => { rates[id] = (rates[id] ?? 0) + v; };
+
+  // ── Always-on passives ────────────────────────────────────────
+  add('gold', s.fleet.length * 0.05 * b.gold);
+  add('gold', tradeRouteIncome(s, b));
+  add('reputation', Math.sqrt(s.resources.navalPower) * 0.01 * b.reputation);
+  add('influence', Math.sqrt(Math.max(0, s.resources.reputation)) * 0.002 * b.influence);
+  if (s.buildings.warehouse > 0) add('supplies', 0.06 * s.buildings.warehouse * b.supplies);
+  if (s.buildings.tavern > 0)    add('rum',      0.05 * s.buildings.tavern * b.rum);
+  if (s.buildings.market > 0 && s.resources.tradeGoods > 0) {
+    const sell = 0.2 * s.buildings.market;
+    add('tradeGoods', -sell);
+    add('gold', sell * 3 * b.trade);
+  }
+
+  if (!s.activity) return rates;
+
+  // ── Activity rates ────────────────────────────────────────────
+  switch (s.activity) {
+    case 'sail':
+      add('gold',     0.6 * spd * ce * b.gold);
+      add('supplies', 0.4 * spd * b.supplies);
+      break;
+    case 'explore':
+      add('supplies', -0.5);
+      add('knowledge', 0.2 * b.knowledge);
+      break;
+    case 'raid': {
+      const target = RAID_TARGETS[Math.min(s.raidTarget, RAID_TARGETS.length - 1)];
+      const power = fleetPower(s, b, ce);
+      const win = Math.min(0.95, power / (power + target.power * 1.25));
+      const rate = (1 + spd * 0.2) / RAID_POINTS;
+      add('gold',        target.gold * win * rate * b.gold);
+      add('tradeGoods',  target.goods * win * rate);
+      add('reputation',  target.rep  * win * rate * b.reputation);
+      break;
+    }
+    case 'trade':
+      add('gold',       (1 + Math.sqrt(fleetCargo(s)) * 0.3) * ce * b.trade * b.gold);
+      add('tradeGoods', 0.3 * ce);
+      break;
+    case 'smuggle':
+      add('gold',       (2.5 + spd * 0.8) * ce * b.gold);
+      add('reputation', 0.3 * b.reputation);
+      break;
+    case 'treasureHunt':
+      if (totalMaps(s) > 0) {
+        const huntRate = (1 + spd * 0.3) * ce * b.treasure * 0.5 / HUNT_POINTS;
+        add('maps',     -huntRate);
+        add('treasure', 2 * huntRate);
+      }
+      break;
+    case 'recruit':
+      add('crew', b.recruit / 15);
+      add('gold', -recruitCost(s) * b.recruit / 15);
+      break;
+    case 'buildShips':
+      if (!s.buildOrder) add('supplies', 0.3 * b.supplies);
+      break;
+    case 'tavern':
+      add('rum',  0.6 * b.rum);
+      add('gold', 0.3 * b.gold);
+      break;
+    case 'researchMaps':
+      add('knowledge', 0.4 * b.knowledge);
+      add('maps',      b.mapFind * ce / 30);
+      break;
+    case 'studyRelics':
+      // +0.5*b.knowledge/s produced, −50 knowledge consumed every 45 s
+      add('knowledge', 0.5 * b.knowledge - 50 / 45);
+      break;
+    case 'diplomacy':
+      add('influence',  0.25 * (1 + s.resources.reputation / 5000) * b.influence);
+      add('reputation', 0.5 * b.reputation);
+      break;
+  }
+
+  return rates;
+}
+
 // ------------------------------------------------------------- ui helpers
 
 /** Human-readable per-second summary for the current activity. */

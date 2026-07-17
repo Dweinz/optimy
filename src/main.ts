@@ -3,6 +3,8 @@
 
 import './style.css';
 import type { GameState } from './types';
+
+declare const __APP_VERSION__: string;
 import { loadGame, applyOfflineProgress, startAutosave, saveGame } from './save';
 import { tick } from './game';
 import { initUI, bindState, renderAll, showOfflineSummary } from './ui';
@@ -10,6 +12,38 @@ import { initScene, updateScene } from './threeScene';
 import { initTutorial } from './tutorial';
 import { initTouch } from './touch';
 import { logEvent } from './notifications';
+
+// Version badge
+const verEl = document.getElementById('app-version');
+if (verEl) verEl.textContent = `v${__APP_VERSION__}`;
+
+// PWA install prompt — captured and surfaced as a button so users don't need
+// to dig through the browser menu to add the app to their home screen.
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): void;
+  userChoice: Promise<{ outcome: string }>;
+}
+let installPrompt: BeforeInstallPromptEvent | null = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e as BeforeInstallPromptEvent;
+  const btn = document.getElementById('btn-install');
+  if (btn) btn.style.display = '';
+});
+document.getElementById('btn-install')?.addEventListener('click', () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  installPrompt.userChoice.then(() => {
+    installPrompt = null;
+    const btn = document.getElementById('btn-install');
+    if (btn) btn.style.display = 'none';
+  });
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  const btn = document.getElementById('btn-install');
+  if (btn) btn.style.display = 'none';
+});
 
 let state: GameState = loadGame();
 

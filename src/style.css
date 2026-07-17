@@ -34,6 +34,7 @@ body {
   flex-shrink: 0;
 }
 #topbar h1 { font-size: 20px; color: var(--gold-bright); text-shadow: 0 2px 4px #000; white-space: nowrap; }
+.ver-badge { font-size: 10px; color: var(--ink-dim); font-weight: normal; vertical-align: middle; margin-left: 4px; }
 #topbar-stats { display: flex; gap: 18px; flex: 1; flex-wrap: wrap; }
 #topbar-stats .tstat { font-size: 14px; color: var(--parchment); white-space: nowrap; }
 #topbar-stats .tstat b { color: var(--gold-bright); }
@@ -142,6 +143,7 @@ table.data-table tr:hover td { background: rgba(212,175,55,.05); }
 .res-row .res-name { color: var(--parchment); }
 .res-row .res-val { color: var(--gold-bright); font-weight: bold; }
 .res-row .res-rate { color: var(--green); font-size: 11px; margin-left: 6px; }
+.res-row .res-rate.neg { color: var(--red); }
 
 .skill-card { background: var(--wood-light); border: 1px solid var(--wood-lighter); border-radius: 8px; padding: 10px; }
 .skill-card .skill-head { display: flex; justify-content: space-between; margin-bottom: 5px; }

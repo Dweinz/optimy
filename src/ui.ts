@@ -23,7 +23,7 @@ import {
   prestigeRequirements, canPrestige, legendPointsOnPrestige, becomeLegend,
   legendUpgradeLevel, legendUpgradeCost, buyLegendUpgrade,
 } from './prestige';
-import { setActivity, activityRates, HUNT_POINTS, RAID_POINTS, VOYAGE_POINTS } from './game';
+import { setActivity, activityRates, computeRates, HUNT_POINTS, RAID_POINTS, VOYAGE_POINTS } from './game';
 import { manualSave, exportSave, importSave } from './save';
 import { notify } from './notifications';
 
@@ -348,18 +348,30 @@ function pageResources(): string {
   const touches = S.activity ? ACTIVITY_TOUCHES[S.activity] : null;
   const upSet   = new Set(touches?.up ?? []);
   const downSet = new Set(touches?.down ?? []);
+  const rates   = computeRates(S);
+
+  const fmtRate = (v: number): string => {
+    const a = Math.abs(v);
+    const s = a < 0.1 ? a.toFixed(2) : a < 10 ? a.toFixed(1) : fmt(a);
+    return `${v >= 0 ? '+' : '-'}${s}/s`;
+  };
+
   return `
     <h2>Resources</h2>
     <div class="panel">
       ${RESOURCE_INFO.map(r => {
         const producing = upSet.has(r.id);
         const consuming = downSet.has(r.id);
-        const cls = producing ? 'producing' : consuming ? 'consuming' : '';
+        const cls   = producing ? 'producing' : consuming ? 'consuming' : '';
         const badge = producing ? '<span class="res-badge up">↑</span>' : consuming ? '<span class="res-badge dn">↓</span>' : '';
+        const rv    = rates[r.id as string];
+        const rateEl = rv !== undefined && Math.abs(rv) >= 0.01
+          ? `<span class="res-rate${rv < 0 ? ' neg' : ''}">${fmtRate(rv)}</span>`
+          : '';
         return `
         <div class="res-row ${cls}" data-tip="${esc(r.desc)}">
           <span class="res-name">${r.icon} ${r.name}${badge}</span>
-          <span class="res-val">${fmt(S.resources[r.id])}</span>
+          <span class="res-val">${fmt(S.resources[r.id])}${rateEl}</span>
         </div>`;
       }).join('')}
     </div>
