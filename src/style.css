@@ -300,79 +300,112 @@ table.data-table tr:hover td { background: rgba(212,175,55,.05); }
    ================================================================ */
 @media (max-width: 768px) {
 
-  /* Topbar: tighter, allow stats to scroll */
-  #topbar { padding: 6px 10px; gap: 8px; flex-wrap: nowrap; }
-  #topbar h1 { font-size: 14px; white-space: nowrap; }
+  /* Base font slightly larger so nothing is squint-worthy */
+  body { font-size: 15px; }
+
+  /* Topbar: hide title text, show only stats + icon buttons */
+  #topbar { padding: 5px 8px; gap: 6px; flex-wrap: nowrap; min-height: 44px; }
+  #topbar h1 { display: none; }
   #topbar-stats {
     flex: 1; gap: 10px; overflow-x: auto; flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
   }
   #topbar-stats::-webkit-scrollbar { display: none; }
-  #topbar-stats .tstat { font-size: 12px; }
-  #topbar-buttons { gap: 4px; }
-  #topbar-buttons .btn.small { padding: 6px 8px; font-size: 12px; min-height: 36px; }
+  #topbar-stats .tstat { font-size: 13px; white-space: nowrap; }
+  #topbar-buttons { gap: 4px; flex-shrink: 0; }
+  /* Icon-only buttons in topbar — hide label text, show emoji only */
+  #topbar-buttons .btn.small {
+    padding: 6px 8px; font-size: 16px; min-height: 36px; min-width: 36px;
+  }
+  #topbar-buttons .btn-text { display: none; }
 
-  /* Prevent double-tap zoom on interactive elements */
+  /* Prevent double-tap zoom on all interactive elements */
   button, .activity-card, .tab-btn { touch-action: manipulation; }
 
-  /* Layout: vertical stack */
+  /* Layout: vertical stack, content on top, side strip in middle, tabs pinned to bottom */
   #layout { flex-direction: column; overflow: hidden; }
 
-  /* Tabs: fixed bottom bar, icons only */
+  /* ── Bottom tab bar ───────────────────────────────────────────── */
   #tabs {
     order: 10;
-    width: 100%; height: 58px; flex-shrink: 0;
+    width: 100%; flex-shrink: 0;
     flex-direction: row;
     overflow-x: auto; overflow-y: hidden;
     border-right: none; border-top: 2px solid var(--gold);
-    padding: 4px 2px; gap: 1px;
+    padding: 4px 4px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    gap: 2px;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
-    /* safe area for home bar on notch phones */
-    padding-bottom: max(4px, env(safe-area-inset-bottom));
+    background: var(--wood);
   }
   #tabs::-webkit-scrollbar { display: none; }
   .tab-btn {
-    flex-direction: column; align-items: center;
-    padding: 3px 10px; font-size: 20px;
-    min-width: 48px; min-height: 46px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 4px 12px; font-size: 22px;
+    min-width: 52px; min-height: 50px;
     border-radius: 8px; flex-shrink: 0;
+    line-height: 1;
   }
   .tab-label { display: none; }
-  .tab-btn .badge { margin-left: 0; margin-top: -6px; font-size: 9px; }
+  .tab-btn .badge { margin-left: 0; margin-top: 2px; font-size: 9px; padding: 1px 4px; }
 
-  /* Content: scrollable middle area */
-  #content { order: 1; flex: 1; overflow-y: auto; padding: 10px 12px; min-height: 0; }
+  /* ── Main content ─────────────────────────────────────────────── */
+  #content {
+    order: 1; flex: 1; overflow-y: auto;
+    padding: 12px 14px; min-height: 0;
+  }
 
-  /* Side panel: compact horizontal strip below content */
+  /* ── Compact side strip (activity + goals only) ───────────────── */
   #side {
     order: 2;
     width: 100%; height: auto; flex-shrink: 0;
     flex-direction: row; flex-wrap: wrap;
     border-left: none; border-top: 1px solid var(--wood-lighter);
+    background: var(--wood);
   }
-  /* Hide the 3D scene and log on mobile to save space and battery */
-  #scene-container { display: none; }
-  #event-log-box { display: none; }
+  #scene-container { display: none; }   /* hide 3D scene — saves battery */
+  #event-log-box   { display: none; }   /* hide log — accessible via Overview tab */
 
-  /* Show activity + goal side by side */
-  #activity-box { flex: 1; min-width: 160px; border-top: none; }
-  #goal-box { flex: 1; min-width: 160px; border-top: none; border-left: 1px solid var(--wood-lighter); }
+  #activity-box {
+    flex: 1; min-width: 150px;
+    border-top: none; padding: 8px 10px;
+  }
+  #goal-box {
+    flex: 1; min-width: 150px;
+    border-top: none; border-left: 1px solid var(--wood-lighter);
+    padding: 8px 10px;
+  }
+  .goal-row { font-size: 13px; padding: 4px 0; }
 
-  /* Larger tap targets for all buttons */
-  .btn { padding: 9px 14px; min-height: 40px; }
-  .btn.small { padding: 7px 10px; min-height: 36px; }
+  /* ── Touch targets ────────────────────────────────────────────── */
+  .btn          { padding: 10px 16px; min-height: 44px; font-size: 14px; }
+  .btn.small    { padding: 8px 11px;  min-height: 38px; }
+  .btn.primary  { min-height: 46px; }
 
-  /* Wider modals */
-  .modal { width: 97%; padding: 14px 14px; }
-
-  /* Notifications: push left so they don't go off-screen */
-  #notifications { right: 10px; left: 10px; max-width: none; }
-
-  /* Activity cards: 2-col grid looks better than 3+ */
+  /* ── Cards & grids ────────────────────────────────────────────── */
   .grid.cols3 { grid-template-columns: repeat(2, 1fr); }
   .grid.cols4 { grid-template-columns: repeat(2, 1fr); }
 
-  /* Skill cards already use auto-fit — they're fine */
-  /* Tables: allow horizontal scroll rather than squishing */
+  .activity-card { padding: 14px 10px; }
+  .activity-card .act-icon { font-size: 30px; }
+  .activity-card .act-name { font-size: 14px; }
+  .activity-card .act-desc { font-size: 12px; }
+
+  .skill-card { padding: 12px; }
+
+  /* ── Modals ───────────────────────────────────────────────────── */
+  .modal { width: 97%; padding: 16px; max-height: 88vh; }
+  .modal h2 { font-size: 17px; }
+  .modal .modal-choices { gap: 10px; }
+
+  /* ── Notifications ────────────────────────────────────────────── */
+  #notifications { right: 8px; left: 8px; max-width: none; top: 50px; }
+  .notif { font-size: 13px; padding: 8px 12px; }
+
+  /* ── Tables: horizontal scroll instead of squishing ──────────── */
   table.data-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Typography ───────────────────────────────────────────────── */
+  h2 { font-size: 17px; }
+  h3 { font-size: 14px; }
 }
