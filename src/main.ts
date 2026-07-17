@@ -7,38 +7,44 @@ import type { GameState } from './types';
 declare const __APP_VERSION__: string;
 import { loadGame, applyOfflineProgress, startAutosave, saveGame } from './save';
 import { tick } from './game';
-import { initUI, bindState, renderAll, showOfflineSummary } from './ui';
+import { initUI, bindState, renderAll, showOfflineSummary, showInstallInstructions } from './ui';
 import { initScene, updateScene } from './threeScene';
 import { initTutorial } from './tutorial';
 import { initTouch } from './touch';
 import { logEvent } from './notifications';
 
-// PWA install prompt — captured and surfaced as a button so users don't need
-// to dig through the browser menu to add the app to their home screen.
+// PWA install — the button is always visible unless the app is already running
+// as an installed PWA (standalone mode). We capture beforeinstallprompt so we
+// can trigger the native dialog directly; if the browser doesn't fire it (app
+// already installed, or Chrome's engagement threshold not yet met), clicking
+// the button shows step-by-step manual instructions instead.
 interface BeforeInstallPromptEvent extends Event {
   prompt(): void;
   userChoice: Promise<{ outcome: string }>;
 }
+const isStandalone = (): boolean =>
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (navigator as { standalone?: boolean }).standalone === true;
+
+const installBtn = document.getElementById('btn-install') as HTMLButtonElement | null;
+if (installBtn && isStandalone()) installBtn.style.display = 'none';
+
 let installPrompt: BeforeInstallPromptEvent | null = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   installPrompt = e as BeforeInstallPromptEvent;
-  const btn = document.getElementById('btn-install');
-  if (btn) btn.style.display = '';
 });
-document.getElementById('btn-install')?.addEventListener('click', () => {
-  if (!installPrompt) return;
-  installPrompt.prompt();
-  installPrompt.userChoice.then(() => {
-    installPrompt = null;
-    const btn = document.getElementById('btn-install');
-    if (btn) btn.style.display = 'none';
-  });
+installBtn?.addEventListener('click', () => {
+  if (installPrompt) {
+    installPrompt.prompt();
+    installPrompt.userChoice.then(() => { installPrompt = null; });
+  } else {
+    showInstallInstructions();
+  }
 });
 window.addEventListener('appinstalled', () => {
   installPrompt = null;
-  const btn = document.getElementById('btn-install');
-  if (btn) btn.style.display = 'none';
+  if (installBtn) installBtn.style.display = 'none';
 });
 
 let state: GameState = loadGame();

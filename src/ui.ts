@@ -126,6 +126,18 @@ function showShipCompletionModal(shipName: string, typeName: string): void {
   `, 'suggestion');
 }
 
+export function showInstallInstructions(): void {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const steps = isIOS
+    ? '1. Tap the <b>Share button</b> (□↑) in Safari\'s bottom toolbar<br>2. Scroll down and tap <b>Add to Home Screen</b><br>3. Tap <b>Add</b> — done!'
+    : '1. Tap the <b>⋮ menu</b> in Chrome\'s top-right corner<br>2. Tap <b>Install app</b> or <b>Add to Home Screen</b><br>3. Tap <b>Install</b> — done!';
+  showModal(`
+    <h2>📲 Install Seven Seas Idle</h2>
+    <div class="modal-desc">${steps}</div>
+    <div class="mt8" style="text-align:right"><button class="btn primary" data-action="modal:close">Got it!</button></div>
+  `, 'suggestion');
+}
+
 function showImportModal(): void {
   showModal(`
     <h2>📥 Import Save</h2>
