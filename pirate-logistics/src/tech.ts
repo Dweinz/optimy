@@ -79,7 +79,7 @@ export function research(s: GameState, branch: TechBranchId): boolean {
   s.influence -= cost.influence;
   consumeMaps(s, cost.maps);
   s.techs[branch]++;
-  addAlert(s, `${def.icon} Researched ${def.name} ${s.techs[branch]}: ${def.effects[s.techs[branch] - 1]}`, 'good');
+  addAlert(s, `${def.icon} Researched ${def.name} ${s.techs[branch]}: ${def.effects[s.techs[branch] - 1]}`, 'good', true);
   return true;
 }
 

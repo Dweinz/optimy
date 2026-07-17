@@ -27,6 +27,23 @@ let elapsed = 0;
 let hoveredIslandId: number | null = null;
 let focusTo: THREE.Vector3 | null = null;
 
+// Event-driven weather & impact effects
+let sunLight: THREE.DirectionalLight;
+let rain: THREE.Points;
+let rainVel: Float32Array;
+let stormTime = 0;
+let stormBlend = 0; // 0 = clear, 1 = full storm (eased)
+const SKY_CLEAR = new THREE.Color(0x0e1a28);
+const SKY_STORM = new THREE.Color(0x05080f);
+const skyColor = new THREE.Color();
+
+interface PulseFx {
+  mesh: THREE.Mesh;
+  t: number;
+  dur: number;
+}
+const pulses: PulseFx[] = [];
+
 interface IslandVisual {
   group: THREE.Group;
   hitMesh: THREE.Mesh;
@@ -214,6 +231,23 @@ export function initScene(el: HTMLElement, selectCb: (id: number | null) => void
   sun.shadow.camera.far = 400;
   sun.shadow.bias = -0.0015;
   scene.add(sun);
+  sunLight = sun;
+
+  // Rain (hidden until a storm event rolls in); follows the camera target.
+  const rCount = 700;
+  const rPos = new Float32Array(rCount * 3);
+  rainVel = new Float32Array(rCount);
+  for (let i = 0; i < rCount; i++) {
+    rPos[i * 3] = (Math.random() - 0.5) * 220;
+    rPos[i * 3 + 1] = Math.random() * 45;
+    rPos[i * 3 + 2] = (Math.random() - 0.5) * 220;
+    rainVel[i] = 28 + Math.random() * 22;
+  }
+  const rGeo = new THREE.BufferGeometry();
+  rGeo.setAttribute('position', new THREE.BufferAttribute(rPos, 3));
+  rain = new THREE.Points(rGeo, new THREE.PointsMaterial({ color: 0x9ab8d8, size: 0.35, transparent: true, opacity: 0.55 }));
+  rain.visible = false;
+  scene.add(rain);
 
   oceanGeo = new THREE.PlaneGeometry(700, 700, 56, 56);
   oceanBase = new Float32Array(oceanGeo.attributes.position.array as Float32Array);
@@ -406,20 +440,84 @@ function syncShips(s: GameState, dt: number): void {
   }
 }
 
+/** Kicks off a visible storm: rain, dark skies and heavy seas. */
+export function triggerStorm(seconds = 26): void {
+  stormTime = Math.max(stormTime, seconds);
+}
+
+/** Expanding colored ring at an island — raids, plagues, gold strikes. */
+export function pulseAtIsland(x: number, z: number, color: number): void {
+  if (!renderer) return;
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(6, 0.55, 8, 40),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 }),
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(x, 0.45, z);
+  scene.add(ring);
+  pulses.push({ mesh: ring, t: 0, dur: 2.4 });
+}
+
+function updateWeather(dt: number): void {
+  if (stormTime > 0) stormTime -= dt;
+  const target = stormTime > 0 ? 1 : 0;
+  stormBlend += (target - stormBlend) * (1 - Math.exp(-1.6 * dt));
+
+  skyColor.copy(SKY_CLEAR).lerp(SKY_STORM, stormBlend);
+  (scene.background as THREE.Color).copy(skyColor);
+  scene.fog!.color.copy(skyColor);
+  sunLight.intensity = 1.3 - stormBlend * 0.75;
+
+  rain.visible = stormBlend > 0.04;
+  if (rain.visible) {
+    (rain.material as THREE.PointsMaterial).opacity = 0.55 * stormBlend;
+    rain.position.set(controls.target.x, 0, controls.target.z);
+    const pos = rain.geometry.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      let y = pos.getY(i) - rainVel[i] * dt;
+      if (y < 0) y = 40 + Math.random() * 5;
+      pos.setY(i, y);
+    }
+    pos.needsUpdate = true;
+  }
+}
+
+function updatePulses(dt: number): void {
+  for (const p of [...pulses]) {
+    p.t += dt;
+    const frac = p.t / p.dur;
+    if (frac >= 1) {
+      scene.remove(p.mesh);
+      p.mesh.geometry.dispose();
+      (p.mesh.material as THREE.Material).dispose();
+      pulses.splice(pulses.indexOf(p), 1);
+      continue;
+    }
+    const scale = 1 + frac * 3.2;
+    p.mesh.scale.set(scale, scale, 1);
+    (p.mesh.material as THREE.MeshBasicMaterial).opacity = 0.95 * (1 - frac) ** 1.5;
+  }
+}
+
 export function updateScene(s: GameState, dt: number, selectedIslandId: number | null): void {
   if (!renderer) return;
   hoverState = s;
   elapsed += dt;
 
-  // Gentle ocean swell.
+  // Ocean swell — heavy and choppy during storms.
+  const waveAmp = 0.5 + stormBlend * 1.1;
+  const waveSpeed = 1 + stormBlend * 0.8;
   const pos = oceanGeo.attributes.position as THREE.BufferAttribute;
   const arr = pos.array as Float32Array;
   for (let i = 0; i < pos.count; i++) {
     const x = oceanBase[i * 3];
     const y = oceanBase[i * 3 + 1];
-    arr[i * 3 + 2] = Math.sin(x * 0.08 + elapsed) * Math.cos(y * 0.07 + elapsed * 0.8) * 0.5;
+    arr[i * 3 + 2] = Math.sin(x * 0.08 + elapsed * waveSpeed) * Math.cos(y * 0.07 + elapsed * 0.8 * waveSpeed) * waveAmp;
   }
   pos.needsUpdate = true;
+
+  updateWeather(dt);
+  updatePulses(dt);
 
   syncIslands(s);
   syncRouteLines(s);

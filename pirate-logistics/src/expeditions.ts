@@ -137,7 +137,7 @@ function resolveExpedition(s: GameState, e: Expedition): void {
     target.storage.food = 10;
     ship.state = 'idle';
     ship.homeIslandId = target.id;
-    addAlert(s, `🏝️ ${target.name} is now under your flag! A dock has been raised.`, 'good');
+    addAlert(s, `🏝️ ${target.name} is now under your flag! A dock has been raised.`, 'good', true);
     return;
   }
 
@@ -158,7 +158,7 @@ function resolveExpedition(s: GameState, e: Expedition): void {
     target.discovered = true;
     const got = addToStorage(s, from, 'maps', mapYield);
     recordProd(s, 'maps', got);
-    addAlert(s, `🗺️ ${ship.name} charted ${target.name}! +${mapYield} maps at ${from.name}`, 'good');
+    addAlert(s, `🗺️ ${ship.name} charted ${target.name}! +${mapYield} maps at ${from.name}`, 'good', true);
   } else {
     target.looted = true;
     let treasure = 0;
@@ -170,7 +170,7 @@ function resolveExpedition(s: GameState, e: Expedition): void {
     recordProd(s, 'maps', gotM);
     s.totals.treasureFound += gotT;
     s.influence += 2;
-    addAlert(s, `💎 ${ship.name} looted ${target.name}: +${fmt(gotT)} treasure, +${gotM} maps (delivered to ${from.name})`, 'good');
+    addAlert(s, `💎 ${ship.name} looted ${target.name}: +${fmt(gotT)} treasure, +${gotM} maps (delivered to ${from.name})`, 'good', true);
   }
 }
 

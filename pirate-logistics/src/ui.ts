@@ -96,8 +96,24 @@ function renderTopbar(): void {
 function renderPanelTabs(): void {
   const el = document.getElementById('panel-tabs')!;
   const bottlenecks = findBottlenecks(S).length;
+
+  // Action badges: pulsing gold markers wherever the player can act now.
+  const canTech = TECHS.some(t => canResearch(S, t.id).ok);
+  const yard = S.islands.find(i => i.owned && i.buildings.some(b => b.type === 'shipyard'));
+  const canShip = !!yard && SHIP_TYPES.some(t => canBuyShip(S, yard, t.id).ok);
+  const idle = idleShips(S).length;
+  const shipsWaiting = idle > 0 && S.routes.length > 0;
+  const canExpedition = S.islands.some(i => i.owned && canLaunchExpedition(S, i.id, 'explore').ok);
+  const sources = S.islands.filter(i => i.owned);
+  const canSettle = S.islands.some(t => t.discovered && !t.owned && sources.some(src => canColonize(S, src.id, t.id).ok));
+
   el.innerHTML = PANELS.map(p => {
-    const badge = p.id === 'production' && bottlenecks > 0 ? `<span class="badge">${bottlenecks}</span>` : '';
+    let badge = '';
+    if (p.id === 'production' && bottlenecks > 0) badge = `<span class="badge">${bottlenecks}</span>`;
+    else if (p.id === 'tech' && canTech) badge = '<span class="badge action">!</span>';
+    else if (p.id === 'ships' && canShip) badge = '<span class="badge action">⚓</span>';
+    else if (p.id === 'routes' && shipsWaiting) badge = `<span class="badge action">${idle}</span>`;
+    else if (p.id === 'island' && (canSettle || canExpedition)) badge = `<span class="badge action">${canSettle ? '🏝' : '🔭'}</span>`;
     return `<button class="ptab ${activePanel === p.id ? 'active' : ''}" data-action="panel:${p.id}" data-tip="${p.tip}">${p.icon}${badge}</button>`;
   }).join('');
 }

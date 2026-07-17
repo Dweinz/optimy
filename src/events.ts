@@ -8,6 +8,7 @@ import { grantMap } from './treasure';
 import { tryFindRelic } from './relics';
 import { gainXp } from './skills';
 import { notify, logEvent } from './notifications';
+import { forceStorm } from './threeScene';
 
 let pendingEvent: GameEventDef | null = null;
 
@@ -332,6 +333,8 @@ export function triggerRandomEvent(s: GameState): void {
   }
   if (pendingEvent) {
     notify(`${pendingEvent.icon} Event: ${pendingEvent.name}!`);
+    // The harbor reflects the drama: storms (and krakens) churn the sea.
+    if (pendingEvent.id === 'storm' || pendingEvent.id === 'kraken') forceStorm(30);
   }
 }
 

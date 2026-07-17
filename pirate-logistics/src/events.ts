@@ -6,6 +6,7 @@ import type { GameState, Island, ResourceId } from './types';
 import { RES_NAME, fmt } from './data';
 import { techLevel, smugglingUnlocked } from './tech';
 import { addAlert } from './notify';
+import { triggerStorm, pulseAtIsland } from './threeScene';
 
 function ownedIslands(s: GameState): Island[] {
   return s.islands.filter(i => i.owned);
@@ -22,6 +23,7 @@ function pick<T>(arr: T[]): T {
 const CARGO_RESOURCES: ResourceId[] = ['wood', 'stone', 'iron', 'coal', 'food', 'sugar', 'rum', 'cloth', 'shipParts'];
 
 function storm(s: GameState): void {
+  triggerStorm();
   const onRoutes = s.ships.filter(sh => sh.state === 'route');
   if (onRoutes.length === 0) {
     addAlert(s, '⛈️ A storm passes harmlessly over empty sea lanes.', 'warn');
@@ -42,6 +44,7 @@ function pirateAttack(s: GameState): void {
   const fort = fortLevel(island);
   const defense = fort * (techLevel(s, 'military') >= 3 ? 2 : 1);
   if (defense >= 2 || (defense >= 1 && Math.random() < 0.6)) {
+    pulseAtIsland(island.x, island.z, 0x6fcf7c);
     addAlert(s, `🏰 Pirates attacked ${island.name} — the fort drove them off!`, 'good');
     return;
   }
@@ -53,6 +56,7 @@ function pirateAttack(s: GameState): void {
   const res = pick(stocked);
   const stolen = Math.floor(island.storage[res] * (0.2 + Math.random() * 0.2));
   island.storage[res] -= stolen;
+  pulseAtIsland(island.x, island.z, 0xe36a5a);
   addAlert(s, `🏴‍☠️ Pirates raided ${island.name}: stole ${stolen} ${RES_NAME[res]}! Build a Fort to defend.`, 'bad');
 }
 
@@ -73,6 +77,7 @@ function treasureDiscovery(s: GameState): void {
   const amount = 2 + Math.floor(Math.random() * 4);
   island.storage.treasure = Math.min(island.storage.treasure + amount, 999);
   s.totals.treasureFound += amount;
+  pulseAtIsland(island.x, island.z, 0xffd75c);
   addAlert(s, `💎 Workers on ${island.name} unearthed ${amount} treasure!`, 'good');
 }
 
@@ -90,6 +95,7 @@ function disease(s: GameState): void {
   const island = pick(hungry);
   const lost = Math.max(1, Math.floor(island.storage.crew * 0.25));
   island.storage.crew -= lost;
+  pulseAtIsland(island.x, island.z, 0x8ae08a);
   addAlert(s, `🤒 Disease sweeps starving ${island.name}: ${lost} crew lost! Ship in food.`, 'bad');
 }
 
@@ -102,6 +108,7 @@ function mutiny(s: GameState): void {
   const island = pick(sober);
   const lost = Math.max(1, Math.floor(island.storage.crew * 0.2));
   island.storage.crew -= lost;
+  pulseAtIsland(island.x, island.z, 0xe3a05a);
   addAlert(s, `🗡️ Mutiny on ${island.name}! ${lost} crew stole a longboat and deserted. Keep the rum stocked!`, 'bad');
 }
 

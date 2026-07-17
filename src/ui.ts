@@ -132,10 +132,36 @@ function renderTopbar(): void {
 function renderTabs(): void {
   const el = document.getElementById('tabs')!;
   const boss = currentBoss(S);
+  const b = computeBonuses(S);
+  // Action badges: a pulsing gold marker on every tab where the player can
+  // do something useful right now.
+  const action = (icon: string) => `<span class="badge action">${icon}</span>`;
   el.innerHTML = TABS.map(t => {
     let badge = '';
-    if (t.id === 'legend' && canPrestige(S)) badge = '<span class="badge">!</span>';
-    if (t.id === 'bounties' && boss && S.bossCooldown <= 0 && bossWinChance(S, boss) >= 0.55) badge = '<span class="badge">⚔</span>';
+    switch (t.id) {
+      case 'activities':
+        if (!S.activity) badge = '<span class="badge">!</span>';
+        break;
+      case 'port':
+        if (BUILDINGS.some(def => S.resources.gold >= buildingCost(def.id, S.buildings[def.id]))) badge = action('⬆');
+        break;
+      case 'fleet':
+        if (SHIP_TYPES.some(st => canOrderShip(S, st.id, b).ok)) badge = action('⚓');
+        break;
+      case 'crew':
+        if (S.crewMembers.length < crewCapacity(S) && S.resources.gold >= recruitCost(S)) badge = action('+');
+        break;
+      case 'maps':
+        if (MAP_QUALITIES.slice(0, 3).some(q => S.mapsInv[q] >= 4)) badge = action('⇪');
+        break;
+      case 'bounties':
+        if (boss && S.bossCooldown <= 0 && bossWinChance(S, boss) >= 0.55) badge = action('⚔');
+        break;
+      case 'legend':
+        if (canPrestige(S)) badge = '<span class="badge">!</span>';
+        else if (LEGEND_UPGRADES.some(u => legendUpgradeLevel(S, u.id) < u.maxLevel && S.legend.points >= legendUpgradeCost(S, u.id))) badge = action('🌟');
+        break;
+    }
     return `<button class="tab-btn ${activeTab === t.id ? 'active' : ''}" data-action="tab:${t.id}">${t.icon} ${t.name}${badge}</button>`;
   }).join('');
 }

@@ -399,6 +399,14 @@ function updateDayNight(dt: number): void {
   (particles.material as THREE.PointsMaterial).opacity = sunHeight < 0.1 ? 0.85 : 0.35;
 }
 
+/** Summons an immediate storm — called when the Storm event strikes. */
+export function forceStorm(seconds = 30): void {
+  if (!renderer) return;
+  raining = true;
+  weatherTimer = seconds;
+  rain.visible = true;
+}
+
 function updateWeather(dt: number): void {
   weatherTimer -= dt;
   if (weatherTimer <= 0) {

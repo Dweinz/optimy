@@ -54,7 +54,7 @@ export function buyShip(s: GameState, island: Island, type: ShipTypeId): boolean
     condition: 100,
   });
   s.totals.shipsBuilt++;
-  addAlert(s, `${def.icon} ${def.name} launched from ${island.name}!`, 'good');
+  addAlert(s, `${def.icon} ${def.name} launched from ${island.name}!`, 'good', true);
   return true;
 }
 
