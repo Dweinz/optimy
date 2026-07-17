@@ -162,7 +162,7 @@ function renderTabs(): void {
         else if (LEGEND_UPGRADES.some(u => legendUpgradeLevel(S, u.id) < u.maxLevel && S.legend.points >= legendUpgradeCost(S, u.id))) badge = action('🌟');
         break;
     }
-    return `<button class="tab-btn ${activeTab === t.id ? 'active' : ''}" data-action="tab:${t.id}">${t.icon} ${t.name}${badge}</button>`;
+    return `<button class="tab-btn ${activeTab === t.id ? 'active' : ''}" data-action="tab:${t.id}">${t.icon} <span class="tab-label">${t.name}</span>${badge}</button>`;
   }).join('');
 }
 

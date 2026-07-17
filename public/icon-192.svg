@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1d130b"/>
+  <circle cx="96" cy="96" r="74" fill="none" stroke="#d4af37" stroke-width="6"/>
+  <!-- Anchor ring -->
+  <circle cx="96" cy="44" r="10" fill="none" stroke="#d4af37" stroke-width="6"/>
+  <!-- Anchor shaft -->
+  <line x1="96" y1="54" x2="96" y2="148" stroke="#d4af37" stroke-width="8" stroke-linecap="round"/>
+  <!-- Anchor crossbar -->
+  <line x1="58" y1="76" x2="134" y2="76" stroke="#d4af37" stroke-width="8" stroke-linecap="round"/>
+  <!-- Anchor arms -->
+  <path d="M96,148 Q62,148 62,122" fill="none" stroke="#d4af37" stroke-width="8" stroke-linecap="round"/>
+  <path d="M96,148 Q130,148 130,122" fill="none" stroke="#d4af37" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="62" cy="122" r="6" fill="#d4af37"/>
+  <circle cx="130" cy="122" r="6" fill="#d4af37"/>
+</svg>
