@@ -14,7 +14,7 @@ import { currentBoss, bossWinChance, challengeBoss } from './bosses';
 import { QUEST_TRACKS, currentGoal, trackIndex, completedGoals, totalGoals } from './quests';
 import { computeBonuses, xpForLevel, masteryXpForLevel, totalSkillLevels } from './skills';
 import { crewEfficiency, crewCapacity, recruitCost, hireCrewMember, promote, promotionCost, canPromote, averageMorale } from './crew';
-import { fleetSpeed, fleetPower, fleetCargo, canOrderShip, orderShip, discountedCost, scrapShip, scrapValue } from './fleet';
+import { fleetSpeed, fleetPower, fleetCargo, canOrderShip, orderShip, discountedCost, scrapShip, scrapValue, getCompletedShip, clearCompletedShip } from './fleet';
 import { buyGood, sellGood, fenceGoods, tradeRouteCount, tradeRouteIncome, cargoUsed, cargoFree } from './trade';
 import { totalMaps, combineMaps, huntSuccessChance, fenceTreasure } from './treasure';
 import { setProgress } from './relics';
@@ -74,7 +74,7 @@ const TABS: { id: TabId; name: string; icon: string }[] = [
 
 let S: GameState;
 let activeTab: TabId = 'overview';
-let modalKind: 'none' | 'event' | 'outcome' | 'offline' | 'import' = 'none';
+let modalKind: 'none' | 'event' | 'outcome' | 'offline' | 'import' | 'suggestion' = 'none';
 let onStateReplaced: ((s: GameState) => void) | null = null;
 
 const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -110,6 +110,20 @@ export function showOfflineSummary(sum: OfflineSummary): void {
     <div class="res-row"><span class="res-name">🗺️ Maps found</span><span class="res-val">${sum.maps}</span></div>
     <div class="mt8" style="text-align:right"><button class="btn primary" data-action="modal:close">Back to the helm!</button></div>
   `, 'offline');
+}
+
+function showShipCompletionModal(shipName: string, typeName: string): void {
+  showModal(`
+    <h2>⚓ Ship Launched!</h2>
+    <div class="modal-desc"><b class="gold-text">${esc(shipName)}</b> (${esc(typeName)}) has joined your fleet. What should the crew focus on next?</div>
+    <div class="modal-choices">
+      <button class="btn" data-action="suggest:sail"><b>⛵ Sail</b><br><span class="muted">Gold and supplies from open water</span></button>
+      <button class="btn" data-action="suggest:raid"><b>🏴‍☠️ Raid</b><br><span class="muted">Test her firepower in battle</span></button>
+      <button class="btn" data-action="suggest:recruit"><b>👥 Recruit</b><br><span class="muted">Fill her bunks with able hands</span></button>
+      <button class="btn" data-action="suggest:buildShips"><b>🔨 Build Another</b><br><span class="muted">Keep the shipyard running</span></button>
+      <button class="btn" data-action="modal:close">Keep current focus</button>
+    </div>
+  `, 'suggestion');
 }
 
 function showImportModal(): void {
@@ -455,7 +469,7 @@ function pageFleet(): string {
     <div class="panel highlight">
       <h3>🔨 Under Construction: ${shipType(S.buildOrder.typeId).name}</h3>
       ${bar(S.buildOrder.points / S.buildOrder.needed, `${fmt(S.buildOrder.points)} / ${fmt(S.buildOrder.needed)} build points`, 'blue')}
-      <div class="muted mt8">Use the Build Ships activity or upgrade the Shipyard to speed this up.</div>
+      <div class="muted mt8">Focus on <b>Build Ships</b> to speed this up — or let the Shipyard passive do the work while you do something else.</div>
     </div>` : '';
 
   const shop = SHIP_TYPES.map(t => {
@@ -473,6 +487,7 @@ function pageFleet(): string {
 
   return `
     <h2>Fleet <span class="muted">(speed ×${fleetSpeed(S, b).toFixed(1)}, cargo ${fmt(fleetCargo(S))}, power ${fmt(fleetPower(S, b, crewEfficiency(S, b)))})</span></h2>
+    <div class="muted mb8" style="font-size:12px">💡 You can order ships from here at any time — no need to switch focus first. Use <b>Build Ships</b> only if you want to speed up construction.</div>
     ${order}
     <div class="panel">
       <h3>Your Ships</h3>
@@ -859,6 +874,10 @@ function handleAction(action: string): void {
       }
       break;
     }
+    case 'suggest':
+      setActivity(S, parts[1] as ActivityId);
+      closeModal();
+      break;
     case 'modal':
       closeModal();
       break;
@@ -920,6 +939,12 @@ export function renderAll(): void {
   renderGoalBox();
   renderLog();
   renderEventModal();
+
+  const completed = getCompletedShip();
+  if (completed && modalKind === 'none') {
+    clearCompletedShip();
+    showShipCompletionModal(completed.name, completed.typeName);
+  }
 
   const content = document.getElementById('content')!;
   const scroll = content.scrollTop;

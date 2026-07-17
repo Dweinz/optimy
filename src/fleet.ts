@@ -61,16 +61,23 @@ export function orderShip(s: GameState, typeId: string, b: Bonuses): boolean {
   return true;
 }
 
+// Pending completion is stored here so the UI can show a follow-up prompt.
+let _pendingCompletion: { name: string; typeName: string } | null = null;
+export function getCompletedShip(): { name: string; typeName: string } | null { return _pendingCompletion; }
+export function clearCompletedShip(): void { _pendingCompletion = null; }
+
 /** Applies build points; completes the order when done. */
 export function progressConstruction(s: GameState, points: number): void {
   if (!s.buildOrder) return;
   s.buildOrder.points += points;
   if (s.buildOrder.points >= s.buildOrder.needed) {
     const t = shipType(s.buildOrder.typeId);
-    s.fleet.push({ id: s.nextId++, typeId: t.id, name: randomShipName() });
+    const name = randomShipName();
+    s.fleet.push({ id: s.nextId++, typeId: t.id, name });
     s.buildOrder = null;
     s.stats.shipsBuilt++;
-    notify(`⚓ ${t.name} launched! She joins your fleet.`, 'achievement');
+    _pendingCompletion = { name, typeName: t.name };
+    notify(`⚓ ${name} (${t.name}) launched! She joins your fleet.`, 'achievement');
     logEvent(s, `A new ${t.name} was launched.`);
   }
 }
